@@ -1,11 +1,13 @@
 import time
 
+import requests
 from requests import Session
 
 from config import USERNAME
 
 VSCO_URL = 'https://vsco.co'
 VSCO_COOKIE_URL = 'https://vsco.co/content/Static/userinfo'
+VSCO_PHOTO_DIR = 'vsco_photos/'
 
 
 class VscoParser(object):
@@ -44,28 +46,26 @@ class VscoParser(object):
 
     def get_all_image_data(self):
         """
-        Function to get all images from user account
-        :return:
+        Function to get all images from user account and add it to the list the following fields:
+        responsive_url: This is the URL where the post image is stored.
+        upload_date: This is the date when the photo was uploaded to VSCO
+        description: This is the description you set on the image, I am filtering this as I only want to save the
+        hashtags used in the description.
+        :return: filtered posts
         """
+
         # Todo - Need to re-think the size and page count
         results = self.session.get(self.media_url, params={"size": 300}).json()["media"]
         posts = []
 
         for post in results:
-            # print(post)
             posts.append(
                 [
                     "https://%s" % post["responsive_url"],  # Grab the Image URL
                     str(post["upload_date"])[:-3],  # Grab the update date
-                    post.get("tags", "null")  # Grab the tags from post, if none: null
+                    self.filter_tags(str(post["description"]))  # Grab the tags from post, if none: null
                 ]
             )
-
-        # Test print
-        print(len(posts))
-
-        for post in posts:
-            print(post)
 
         return posts
 
@@ -73,24 +73,50 @@ class VscoParser(object):
         """
         Function handles downloading images from the URL collected in the get_all_image_data() function
         :param posts - dictionary of posts
-        :return:
+        :return: complete - Returns True when complete unless it fails
         """
 
-    # with open("%s.jpg" % str(post[1]), "wb") as file:
-    #     file.write(requests.get())
+        # The file name is made up of the desc_tags and upload_date
+        # filename = str(posts[2]) + str(posts[1])
 
-    def get_image_by_tag(self, tag):
-        """
-        This function gathers all images with the matching tag provided
+        for post in posts:
+            with open(VSCO_PHOTO_DIR + "%s.jpg" % str(post[2] + post[1]), "wb") as file:
+                file.write(requests.get(post[0], stream=True).content)
 
-        :param tag: User defined
-        :return:
+        return True
+
+    def filter_tags(self, desc_tag):
         """
+        Function is used to filter the description tags inside a post due to the possibility of there being None, one
+        or many.The tags are going to make up the image name when downloaded.
+        Ref: https://www.geeksforgeeks.org/python-extract-hashtags-from-text/
+
+        :param desc_tag:
+        :return: tag_string
+        """
+        tag_string = ""
+
+        for word in desc_tag.split():
+            # Check the first character of every word
+            if word[0] == '#':
+                tag_string += word[1:] + "_"
+
+        return tag_string
+
+    # def get_image_by_tag(self, tag):
+    #     """
+    #     This function gathers all images with the matching tag provided
+    #
+    #     :param tag: User defined
+    #     :return:
+    #     """
 
 
 def main():
     parser = VscoParser(username=USERNAME)
-    parser.get_all_image_data()
+    data = parser.get_all_image_data()
+    # TODO - needed to add a progress updater
+    parser.download_images(data)
 
 
 if __name__ == "__main__":
