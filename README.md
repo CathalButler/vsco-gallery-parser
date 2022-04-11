@@ -15,11 +15,20 @@ in order to be able to do this.
 Using these routes allow me to download all my images from my VSCO account and tag them with the tags I have posted the
 photo with.This then allows me to set up a route on my own server to return photos to my portfolio website.
 
+The last request above is used to pull all data from the `medias` collect under a VSCO account which is all photos and videos.
+Once all posts are collected, I filter out the hashtags as I will use them with the naming of the photo with the upload_date
+when I download it locally. The reason for this(for now) is, that I can then use another program to fetch images by location 
+and upload date as the location would be one of the hashtags in a post.
+
 ## Requirements
 Python 3.8+
 
 ## Usage
+Install requirements:<br>
+`pip3 install -r requirements.txt`<br>
 
+Run the program:<br>
+`python3 vsco_parser.py username`
 
 ## References
 * https://vsco.co/
