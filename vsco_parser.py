@@ -1,3 +1,4 @@
+import os
 import time
 
 import requests
@@ -62,7 +63,7 @@ class VscoParser(object):
             posts.append(
                 [
                     "https://%s" % post["responsive_url"],  # Grab the Image URL
-                    str(post["upload_date"])[:-3],  # Grab the update date
+                    str(post["upload_date"])[:-3],  # Grab the upload date
                     self.filter_tags(str(post["description"]))  # Grab the tags from post, if none: null
                 ]
             )
@@ -71,16 +72,22 @@ class VscoParser(object):
 
     def download_images(self, posts):
         """
-        Function handles downloading images from the URL collected in the get_all_image_data() function
+        Function handles downloading images from the URL collected in the get_all_image_data() function.
+        This function will also check if the image already exists in storage, if so it skips.
+        The file name is made up of the desc_tags and upload_date
         :param posts - dictionary of posts
         :return: complete - Returns True when complete unless it fails
         """
 
-        # The file name is made up of the desc_tags and upload_date
-        # filename = str(posts[2]) + str(posts[1])
-
         for post in posts:
-            with open(VSCO_PHOTO_DIR + "%s.jpg" % str(post[2] + post[1]), "wb") as file:
+            # Create file name from 'desc_tags_upload_date'
+            filename = str(post[2]) + str(post[1])
+            # Check is the file exists in storage already
+            if "%s.jpg" % filename in os.listdir(VSCO_PHOTO_DIR):
+                print(filename + " in storage. Skipping...")
+                continue
+            print("Downloading: " + filename)
+            with open(VSCO_PHOTO_DIR + "%s.jpg" % filename, "wb") as file:
                 file.write(requests.get(post[0], stream=True).content)
 
         return True
@@ -101,7 +108,7 @@ class VscoParser(object):
             if word[0] == '#':
                 tag_string += word[1:] + "_"
 
-        return tag_string
+        return tag_string.lower()
 
     # def get_image_by_tag(self, tag):
     #     """
