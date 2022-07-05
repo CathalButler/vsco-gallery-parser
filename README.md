@@ -28,7 +28,18 @@ Install requirements:<br>
 `pip3 install -r requirements.txt`<br>
 
 Run the program:<br>
-`python3 vsco_parser.py username`
+```shell
+usage: vsco_parser.py [-h] [-a] [-p] username
+
+positional arguments:
+  username         The account username of which you which to scrape gallery data from.
+
+optional arguments:
+  -h, --help       show this help message and exit
+  -a, --allImages  Downloads all files from a users VSCO profile
+  -p, --printData  Prints all the json information from the last download request
+
+```
 
 ## References
 * https://vsco.co/

@@ -164,28 +164,32 @@ class VscoParser(object):
             #     print("Title: %s\nUpload Date: %s\nDownload URL: %s\n"
             #           % (image[2], upload_date.strftime('%Y-%m-%d %H:%M:%S'), image[0]))
 
-# def arg_parser():
-#     parser = argparse.ArgumentParser()
-#
-#     parser.add_argument("username", type=str,
-#                         help="The account username of which you which to scrape gallery data from.")
-#
-#     parser.add_argument("-p", "--print-data", action="print_all_image_data",
-#                         help="Prints all the local data saved from a VSCO account")
-#
-#     return parser.parse_args()
+
+def arg_parser():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("username", type=str,
+                        help="The account username of which you which to scrape gallery data from.")
+    parser.add_argument("-a", "--allImages", action="store_true",
+                        help="Downloads all files from a users VSCO profile")
+
+    parser.add_argument("-p", "--printData", action="store_true",
+                        help="Prints all the json information from the last download request")
+
+    return parser.parse_args()
+
 
 def main():
-    # args = arg_parser()
+    args = arg_parser()
 
-    if len(sys.argv) != 2:
-        raise ValueError('Please provide a VSCO account username.')
-
-    parser = VscoParser(username=sys.argv[1])
-    data = parser.get_all_image_data()
-    # # TODO - need to add a progress updater
-    parser.download_images(data)
-    #parser.print_all_image_data()
+    if args.allImages:
+        parser = VscoParser(username=args.username)
+        data = parser.get_all_image_data()
+        parser.download_images(data)
+    if args.printData:
+        # TODO - need to add a progress updater
+        parser = VscoParser(username=args.username)
+        parser.print_all_image_data()
 
 
 if __name__ == "__main__":
