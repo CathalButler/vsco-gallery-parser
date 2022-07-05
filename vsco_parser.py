@@ -1,3 +1,6 @@
+import argparse
+import datetime
+import json
 import os
 import sys
 import time
@@ -8,6 +11,7 @@ from requests import Session
 VSCO_URL = 'https://vsco.co'
 VSCO_COOKIE_URL = 'https://vsco.co/content/Static/userinfo'
 VSCO_PHOTO_DIR = 'vsco_photos/'
+STORAGE_FILE = 'data/vsco_image_data.json'
 
 
 class VscoParser(object):
@@ -71,6 +75,9 @@ class VscoParser(object):
                 ]
             )
 
+        # Save image data collected to a json file:
+        self.save_image_data(results)
+
         return posts
 
     def download_images(self, posts):
@@ -121,15 +128,64 @@ class VscoParser(object):
     #     :return:
     #     """
 
+    def save_image_data(self, image_data_list):
+        """
+        This function saves all the image data from a VSCO account
+        :param image_data_list:
+        """
+        with open(STORAGE_FILE, 'w') as f:
+            json.dump(image_data_list, f, ensure_ascii=False)
+
+    def read_image_data_file(self):
+        with open(STORAGE_FILE, 'r') as f:
+            image_data = json.load(f)
+
+        return image_data
+
+    def print_all_image_data(self):
+        """
+        This function prints all the image data saved to the 'data/vsco_image_data.json file'. This is all
+        the file information for each file on a VSCO account.
+        """
+        image_data = self.read_image_data_file()
+
+        if image_data is None:
+            print("No local image data available")
+
+        for image in image_data:
+            print(json.dumps(image, indent=4, ensure_ascii=False))
+
+            # upload_date = datetime.datetime.fromtimestamp(int(image[1]))
+            #
+            # if image[2] == "":
+            #     print("Title: 'No image title'\nUpload Date: %s\nDownload URL: %s\n"
+            #           % (upload_date.strftime('%Y-%m-%d %H:%M:%S'), image[0]))
+            # else:
+            #     print("Title: %s\nUpload Date: %s\nDownload URL: %s\n"
+            #           % (image[2], upload_date.strftime('%Y-%m-%d %H:%M:%S'), image[0]))
+
+# def arg_parser():
+#     parser = argparse.ArgumentParser()
+#
+#     parser.add_argument("username", type=str,
+#                         help="The account username of which you which to scrape gallery data from.")
+#
+#     parser.add_argument("-p", "--print-data", action="print_all_image_data",
+#                         help="Prints all the local data saved from a VSCO account")
+#
+#     return parser.parse_args()
 
 def main():
+    # args = arg_parser()
+
     if len(sys.argv) != 2:
         raise ValueError('Please provide a VSCO account username.')
 
     parser = VscoParser(username=sys.argv[1])
     data = parser.get_all_image_data()
-    # TODO - needed to add a progress updater
+    # # TODO - need to add a progress updater
     parser.download_images(data)
+    #parser.print_all_image_data()
 
 
 if __name__ == "__main__":
