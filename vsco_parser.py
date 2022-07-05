@@ -1,10 +1,9 @@
 import os
+import sys
 import time
 
 import requests
 from requests import Session
-
-from config import USERNAME
 
 VSCO_URL = 'https://vsco.co'
 VSCO_COOKIE_URL = 'https://vsco.co/content/Static/userinfo'
@@ -39,6 +38,10 @@ class VscoParser(object):
         """
 
         results = self.session.get(VSCO_URL + "/ajxp/%s/2.0/sites?subdomain=%s" % (self.session_cookie, self.username))
+
+        if results.status_code == 404:
+            print('VSCO user account not found, please check the username.')
+            sys.exit()
 
         # Get id from json data
         site_id = results.json()["sites"][0]["id"]
@@ -120,7 +123,10 @@ class VscoParser(object):
 
 
 def main():
-    parser = VscoParser(username=USERNAME)
+    if len(sys.argv) != 2:
+        raise ValueError('Please provide a VSCO account username.')
+
+    parser = VscoParser(username=sys.argv[1])
     data = parser.get_all_image_data()
     # TODO - needed to add a progress updater
     parser.download_images(data)
