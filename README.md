@@ -29,15 +29,18 @@ Install requirements:<br>
 
 Run the program:<br>
 ```shell
-usage: vsco_parser.py [-h] [-a] [-p] username
+usage: vsco_parser.py [-h] [-a] [-p] [-c] username
 
 positional arguments:
-  username         The account username of which you which to scrape gallery data from.
+  username              The account username of which you which to scrape gallery data from.
 
 optional arguments:
-  -h, --help       show this help message and exit
-  -a, --allImages  Downloads all files from a users VSCO profile
-  -p, --printData  Prints all the json information from the last download request
+  -h, --help            show this help message and exit
+  -a, --allImages       Downloads all files from a users VSCO profile
+  -p, --printRawImageData
+                        Prints all the json information from the last download request
+  -c, --collectImageURLData
+                        Collects and store only the image URL, location tag, and timedate stamp
 
 ```
 
