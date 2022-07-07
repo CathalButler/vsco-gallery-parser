@@ -1,5 +1,4 @@
 import argparse
-import datetime
 import json
 import os
 import sys
@@ -10,8 +9,9 @@ from requests import Session
 
 VSCO_URL = 'https://vsco.co'
 VSCO_COOKIE_URL = 'https://vsco.co/content/Static/userinfo'
-VSCO_PHOTO_DIR = 'vsco_photos/'
-STORAGE_FILE = 'data/vsco_image_data.json'
+VSCO_PHOTO_DIR = 'vsco_photos'
+RAW_IMAGE_DATA_FILE = 'data/raw/vsco_image_data.json'
+FILTERED_IMAGE_DATA = 'data/filtered/vsco_image_urls.json'
 
 
 class VscoParser(object):
@@ -37,14 +37,13 @@ class VscoParser(object):
         all the 'medias' data for that site_id.
 
         Endpoint: https://vsco.co/ajxp/{vs_session_cookie}/2.0/sites?subdomain={account_username}
-        :params: none
         :return: returns the site id for the user account specified
         """
 
         results = self.session.get(VSCO_URL + "/ajxp/%s/2.0/sites?subdomain=%s" % (self.session_cookie, self.username))
 
         if results.status_code == 404:
-            print('VSCO user account not found, please check the username.')
+            print('VSCO user account not found, please check the username and try again.')
             sys.exit()
 
         # Get id from json data
@@ -52,7 +51,7 @@ class VscoParser(object):
 
         return site_id
 
-    def get_all_image_data(self):
+    def parser_image_download_data(self):
         """
         Function to get all images from user account and add it to the list the following fields:
         responsive_url: This is the URL where the post image is stored.
@@ -75,8 +74,8 @@ class VscoParser(object):
                 ]
             )
 
-        # Save image data collected to a json file:
-        self.save_image_data(results)
+        # Saves the raw image data collected to a json file:
+        self.save_image_data(results, RAW_IMAGE_DATA_FILE)
 
         return posts
 
@@ -120,49 +119,38 @@ class VscoParser(object):
 
         return tag_string.lower()
 
-    # def get_image_by_tag(self, tag):
-    #     """
-    #     This function gathers all images with the matching tag provided
-    #
-    #     :param tag: User defined
-    #     :return:
-    #     """
-
-    def save_image_data(self, image_data_list):
+    def save_image_data(self, image_data_list, storage_file):
         """
-        This function saves all the image data from a VSCO account
-        :param image_data_list:
+        This function is used for saving image data locally.
+        param storage_file: the file where the data is stored to.
+        param image_data_list: List of image data.
         """
-        with open(STORAGE_FILE, 'w') as f:
+        with open(storage_file, 'w') as f:
             json.dump(image_data_list, f, ensure_ascii=False)
 
-    def read_image_data_file(self):
-        with open(STORAGE_FILE, 'r') as f:
+    def read_image_data_file(self, storage_file):
+        """
+        This function reads image data from local storage.
+        :param storage_file: the file where the data is stored
+        """
+        with open(storage_file, 'r') as f:
             image_data = json.load(f)
 
         return image_data
 
-    def print_all_image_data(self):
+    def print_local_image_data(self, storage_file):
         """
-        This function prints all the image data saved to the 'data/vsco_image_data.json file'. This is all
+        This function storages all the image data saved to the 'data/vsco_image_data.json file'. This is all
         the file information for each file on a VSCO account.
+        :param storage_file: the file with the data you wish to print.
         """
-        image_data = self.read_image_data_file()
+        image_data = self.read_image_data_file(storage_file)
 
         if image_data is None:
             print("No local image data available")
-
-        for image in image_data:
-            print(json.dumps(image, indent=4, ensure_ascii=False))
-
-            # upload_date = datetime.datetime.fromtimestamp(int(image[1]))
-            #
-            # if image[2] == "":
-            #     print("Title: 'No image title'\nUpload Date: %s\nDownload URL: %s\n"
-            #           % (upload_date.strftime('%Y-%m-%d %H:%M:%S'), image[0]))
-            # else:
-            #     print("Title: %s\nUpload Date: %s\nDownload URL: %s\n"
-            #           % (image[2], upload_date.strftime('%Y-%m-%d %H:%M:%S'), image[0]))
+        else:
+            for image in image_data:
+                print(json.dumps(image, indent=4, ensure_ascii=False))
 
 
 def arg_parser():
@@ -173,8 +161,11 @@ def arg_parser():
     parser.add_argument("-a", "--allImages", action="store_true",
                         help="Downloads all files from a users VSCO profile")
 
-    parser.add_argument("-p", "--printData", action="store_true",
+    parser.add_argument("-p", "--printRawImageData", action="store_true",
                         help="Prints all the json information from the last download request")
+
+    parser.add_argument("-c", "--collectImageURLData", action="store_true",
+                        help="Collects and store only the image URL, location tag, and timedate stamp")
 
     return parser.parse_args()
 
@@ -184,12 +175,17 @@ def main():
 
     if args.allImages:
         parser = VscoParser(username=args.username)
-        data = parser.get_all_image_data()
+        data = parser.parser_image_download_data()
         parser.download_images(data)
-    if args.printData:
+    if args.printRawImageData:
         # TODO - need to add a progress updater
         parser = VscoParser(username=args.username)
-        parser.print_all_image_data()
+        parser.print_local_image_data(RAW_IMAGE_DATA_FILE)
+    if args.collectImageURLData:
+        parser = VscoParser(username=args.username)
+        image_urls = parser.parser_image_download_data()
+        parser.save_image_data(image_urls, FILTERED_IMAGE_DATA)
+        parser.print_local_image_data(FILTERED_IMAGE_DATA)
 
 
 if __name__ == "__main__":
